@@ -1,4 +1,4 @@
-// 盲派八字 QA：範本（楊堅）欄位比對、女命、東經 70° 以西、章節順序、外洩檢查、PDF／Word、瀏覽器截圖（桌機＋手機）
+// 盲派八字 QA：範本欄位比對（本機私有資料）、女命、東經 70° 以西、章節順序、外洩檢查、PDF／Word、瀏覽器截圖（桌機＋手機）
 // 用法：npm run qa [網址]   （預設 http://localhost:4174/mangpai/，需先 npm run build && npm run preview；SKIP_BROWSER=1 只跑資料檢查）
 import fs from 'fs';import zlib from 'zlib';
 import {build} from './src/mp/build.js';
@@ -10,14 +10,11 @@ const flat=bs=>{const o=[];const f=b=>{if(b.t==='N')b.c.forEach(f);else if(b.x!=
 const LEAK=/undefined|NaN|\$\{|【】|null|\[object/;
 const FORBID=/感謝您購買|專業版軟件|LINE|WeChat|微信|Telegram|客戶資料|https?:\/\/|www\./i;
 const CHAPTERS=['八字基本命理分析','八字斷一生運勢演變','盲派結構論斷（本站增補）','開運制煞篇','星座特質分析'];
-// 範本（楊堅，男，西元 1971-09-18 06:00）第 1 頁各欄位
-const SAMPLE={P:'辛亥 丁酉 丙午 辛卯',ss:'正財 劫財 日元 正財',cang:'甲壬 辛 己丁 乙',stage:'絕 死 帝旺 沐浴',
- stars:[['天德合','天乙貴人','劫煞'],['天狗','災煞','天乙貴人'],['龍德','六厄','羊刃','將星','六秀日','孤鸞'],['金匱','五鬼','月破','沐浴','桃花','外桃花']],
- taiyuan:'戊子',taixi:'辛未',mg:'癸巳',ge:'正財格',kong:'寅卯',xi:'木火',ji:'金',xz:'處女',strong:false,tianyun:'金',
- dayun:'丙申4 乙未14 甲午24 癸巳34 壬辰44 辛卯54 庚寅64 己丑74',cnt:{比肩:1,劫財:2,食神:0,傷官:0,正財:3,偏財:0,正官:0,七殺:1,正印:1,偏印:0},
- sc:{木:11,火:15,土:3,金:26,水:5},lun:'7月29日 民國60年'};
+// 範本命例為真實個人，資料放在 repo 外（PRIVATE_CASES 或 /workspace/jiaodui/八字/private-cases/），找不到就略過範本比對
+const PRIV=process.env.PRIVATE_CASES||'/workspace/jiaodui/八字/private-cases/mangpai-sample.mjs';
+const {SAMPLE,SAMPLE_CASE}=fs.existsSync(PRIV)?await import(PRIV):{};
 const CASES=[
- {k:'楊堅',f:{name:'楊堅',gender:1,date:'1971-09-18',time:'06:00',lon:121.56,placeName:'台北'},o:{year:2023},sample:true},
+ ...(SAMPLE_CASE?[SAMPLE_CASE]:[]),
  {k:'female',f:{name:'測試女命',gender:0,date:'1985-03-12',time:'14:20',lon:120.68,placeName:'台中'},o:{year:2026}},
  // 紐約（西經 74°、UTC−5）當地 1990-01-20 05:30 ＝ 台北時間 1990-01-20 18:30；干支換日線：日柱加一日
  {k:'west',f:{name:'測試西半球',gender:1,date:'1990-01-20',time:'18:30',lon:-74.01,placeName:'紐約',local:{date:'1990-01-20',time:'05:30',tz:-5}},o:{year:2026},west:true},
@@ -42,8 +39,8 @@ for(const c of CASES){const {m,blocks}=build(c.f,{...c.o,made:'2026-11-15'});con
   chk('天運五行',blocks[0].d.tianyun,S.tianyun);chk('大運',m.dayun.slice(0,8).map(d=>d.gz+d.from).join(' '),S.dayun);
   for(const k in S.cnt)chk('十神 '+k,m.cnt[k],S.cnt[k]);const d=blocks[0].d;chk('農曆',`${d.lun[0]}月${d.lun[1]}日 民國${d.lun[2]}年`,S.lun);
   for(const k in S.sc)chk('五行分數 '+k,m.sc[k],S.sc[k]);
-  const hit=res.filter(r=>r[1]).length;console.log(`楊堅 範本比對：${hit}/${res.length} 相符`);res.filter(r=>!r[1]).forEach(r=>console.log(`  不符 ${r[0]}：本站 ${r[2]}／範本 ${r[3]}`));
-  fs.writeFileSync(`${OUT}/楊堅-範本比對.txt`,res.map(r=>`${r[1]?'✓':'✗'} ${r[0]}：本站 ${r[2]}　範本 ${r[3]}`).join('\n')+'\n');
+  const hit=res.filter(r=>r[1]).length;console.log(`範本比對：${hit}/${res.length} 相符`);res.filter(r=>!r[1]).forEach(r=>console.log(`  不符 ${r[0]}：本站 ${r[2]}／範本 ${r[3]}`));
+  fs.writeFileSync(`${OUT}/sample-範本比對.txt`,res.map(r=>`${r[1]?'✓':'✗'} ${r[0]}：本站 ${r[2]}　範本 ${r[3]}`).join('\n')+'\n');
   ok(res.filter(r=>!r[1]).every(r=>r[0].startsWith('五行分數')),'範本欄位不符（五行分數以外）');}
  const pdf=await mingshuPdf(blocks,io,c.f.name+' 盲派八字命書');ok(pdf.pages>=25&&pdf.pages<=70,`${c.k} PDF 頁數 ${pdf.pages}`);ok(!pdf.missing.length,`${c.k} 缺字 ${pdf.missing.join('')}`);
  fs.writeFileSync(`${OUT}/${c.k}.pdf`,pdf.bytes);const dx=await mingshuDocxBuffer(blocks,io,c.f.name+' 盲派八字命書');fs.writeFileSync(`${OUT}/${c.k}.docx`,dx);
@@ -66,7 +63,7 @@ if(process.env.SKIP_BROWSER!=='1'){const {chromium}=await import('./qa-pw.mjs');
   ok(JSON.stringify(info.t)===JSON.stringify(CHAPTERS),`${dev} 網頁命書章節 ${info.t}`);ok(!/undefined|NaN|\$\{/.test(info.txt),`${dev} 網頁未定義`);ok(info.ow<=info.vw+1,`${dev} 橫向捲動 ${info.ow}`);ok(info.nav,'nav.js');
   await pg.screenshot({path:`${OUT}/${dev}-book.png`});
   await pg.evaluate(()=>{[...document.querySelectorAll('#bookBody .ms-T')][2].scrollIntoView();scrollBy(0,-120);});await pg.waitForTimeout(400);await pg.screenshot({path:`${OUT}/${dev}-book-mangpai.png`});
-  if(dev==='mobile')for(const [b,ext] of [['#dlPdf','pdf'],['#dlDoc','docx']]){const [d]=await Promise.all([pg.waitForEvent('download',{timeout:120000}),pg.click(b)]);const f=`${OUT}/web-楊堅.${ext}`;await d.saveAs(f);
+  if(dev==='mobile')for(const [b,ext] of [['#dlPdf','pdf'],['#dlDoc','docx']]){const [d]=await Promise.all([pg.waitForEvent('download',{timeout:120000}),pg.click(b)]);const f=`${OUT}/web-demo.${ext}`;await d.saveAs(f);
    const sz=fs.statSync(f).size;ok(sz>(ext==='pdf'?300000:20000),`下載 ${ext} ${sz}`);console.log('download',d.suggestedFilename(),sz);}
   await pg.click('#tabs button[data-t="refs"]');await pg.waitForTimeout(300);await pg.screenshot({path:`${OUT}/${dev}-refs.png`,fullPage:dev==='desktop'});
   ok(!errs.length,`${dev} 頁面錯誤 ${errs.join(';')}`);await ctx.close();}
