@@ -22,6 +22,15 @@ const vt=(x,y,s,txt,c,step)=>[...String(txt)].map((ch,i)=>t(x,y+i*(step||s*1.08)
 // 文字置中（mid:1 表示 x 為中心）
 const ct=(x,y,s,txt,c)=>t(x,y,s,txt,c,{mid:1});
 export const P1_TXT='姓名性別西元農曆時日月年日期主星天干地支藏副十二運星特星神煞歲大運日元閏五行分數比肩劫財食神傷官正財偏財正官七殺正印偏印天運胎息元命宮格局血型空亡喜用忌星座強弱身流本命書由「盲派八字論命」網站依出生資料以規則推算產生，內容僅供參考。：（）產生曆法DE421節氣定柱真太陽東經干支換線合剋沖六半三刑穿破木火土金水0123456789-()年月日時分盲派八字命盤吉凶方位Page of歲';
+// 四柱干支關係（a、b 為柱序 0 年…3 時；k：g 干、z 支；n：同一對地支的第幾種關係）
+export function p1Rels(d){const out=[],ord=[3,2,1,0];
+ for(let i=0;i<4;i++)for(let j=i+1;j<4;j++){const a=d.P[ord[i]],c=d.P[ord[j]];
+  const gr=ganhe(a.gan)===c.gan?'合':(()=>{const A='木火土金水',x=A.indexOf(ganWx(a.gan)),y=A.indexOf(ganWx(c.gan));return (x+2)%5===y||(y+2)%5===x?'剋':'';})();
+  if(gr)out.push({k:'g',a:ord[i],b:ord[j],r:gr,n:0});
+  const zr=[];if(isChong(a.zhi,c.zhi))zr.push('沖');if(liuhe(a.zhi)===c.zhi)zr.push('六合');if(isBanhe(a.zhi,c.zhi))zr.push('半三合');if(isXing(a.zhi,c.zhi)||isXing(c.zhi,a.zhi))zr.push('刑');if(hai(a.zhi)===c.zhi)zr.push('穿');
+  const PO=['子卯','卯午','午酉'];if(PO.includes(a.zhi+c.zhi)||PO.includes(c.zhi+a.zhi))zr.push('破');
+  zr.forEach((r,n)=>out.push({k:'z',a:ord[i],b:ord[j],r,n}));}
+ return out;}
 export function page1(d){const o=[];const BL='#0000ff',RD='#ff0000',GR='#008000',BK='#000000';
  // ── 右：命盤表（時日月年由左至右，標籤欄在最右）
  const X0=283,CW=57,XL=X0+CW*4,XR=575,cx=i=>X0+CW*i+CW/2;const ord=[3,2,1,0];
@@ -49,12 +58,9 @@ export function page1(d){const o=[];const BL='#0000ff',RD='#ff0000',GR='#008000'
   (d.stars[pi]||[]).forEach((s,k)=>o.push(ct(x,rows[10]+16+k*14.5,11,s)));});
  // 干支關係箭頭
  const ganLv=[0,0,0],zhiLv=[0,0,0];
- for(let i=0;i<4;i++)for(let j=i+1;j<4;j++){const a=d.P[ord[i]],c=d.P[ord[j]];const xa=cx(i)+8,xb=cx(j)-8;
-  const gr=ganhe(a.gan)===c.gan?'合':(()=>{const A='木火土金水',x=A.indexOf(ganWx(a.gan)),y=A.indexOf(ganWx(c.gan));return (x+2)%5===y||(y+2)%5===x?'剋':'';})();
-  if(gr){const y=rows[5]+7+(j-i-1)*7;o.push(...arrow(xa,xb,y,BL),ct((xa+xb)/2,y-1.5,7.5,gr,BL));}
-  const zr=[];if(isChong(a.zhi,c.zhi))zr.push('沖');if(liuhe(a.zhi)===c.zhi)zr.push('六合');if(isBanhe(a.zhi,c.zhi))zr.push('半三合');if(isXing(a.zhi,c.zhi)||isXing(c.zhi,a.zhi))zr.push('刑');if(hai(a.zhi)===c.zhi)zr.push('穿');
-  const PO=['子卯','卯午','午酉'];if(PO.includes(a.zhi+c.zhi)||PO.includes(c.zhi+a.zhi))zr.push('破');
-  zr.forEach((r,k)=>{const y=rows[6]+7+((j-i-1)*2+k)%4*6.5;o.push(...arrow(xa,xb,y,BL),ct((xa+xb)/2,y-1.5,7.5,r,BL));});}
+ for(const R of p1Rels(d)){const i=ord.indexOf(R.a),j=ord.indexOf(R.b),xa=cx(Math.min(i,j))+8,xb=cx(Math.max(i,j))-8,gap=Math.abs(j-i)-1;
+  if(R.k==='g'){const y=rows[5]+7+gap*7;o.push(...arrow(xa,xb,y,BL),ct((xa+xb)/2,y-1.5,7.5,R.r,BL));}
+  else{const y=rows[6]+7+(gap*2+R.n)%4*6.5;o.push(...arrow(xa,xb,y,BL),ct((xa+xb)/2,y-1.5,7.5,R.r,BL));}}
  // 大運（由右至左）
  const dy=d.dayun.slice(0,8),DW=(XL-X0)/dy.length;
  dy.forEach((u,i)=>{const x=XL-DW*i-DW/2;if(i)o.push(ln(XL-DW*i,rows[11],XL-DW*i,rows[13]));

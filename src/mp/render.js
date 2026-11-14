@@ -1,6 +1,6 @@
 // 命書輸出：網頁 HTML、PDF（pdf-lib，字型子集嵌入，可選取文字）、Word（docx，可編輯文字）。
 // io：{font(path)→ArrayBuffer, manifest()→number[], image(key)→Uint8Array, imgUrl(key)→string}
-import {layout,page1,svgOf,compassPrims,PW,PH,IMG,COLOR,FONT_STACK,P1_TXT} from './layout.js';
+import {layout,page1,p1Rels,svgOf,compassPrims,PW,PH,IMG,COLOR,FONT_STACK,P1_TXT} from './layout.js';
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 export const textOf=blocks=>{const o=[];const f=b=>{if(b.t==='N')b.c.forEach(f);else if(b.x!=null)o.push(b.x);else if(b.t==='GRID')o.push(b.cap,b.head.join(''),...b.rows.map(r=>r.join('')));else if(b.cap)o.push(b.cap);else if(b.d)o.push(JSON.stringify(b.d),P1_TXT);};blocks.forEach(f);return o.join('\n');};
 // ── 網頁
@@ -17,8 +17,29 @@ export function mingshuHtml(blocks,imgUrl){const o=[];
   case 'IMG':{const [w,h]=IMG[b.k];o.push(`<img class="ms-img ms-${b.k}" src="${esc(imgUrl(b.k))}" width="${w}" height="${h}" alt="" loading="lazy">`);break;}
   case 'TBL':o.push(`<p class="ms-P">${esc(b.cap)}</p><table class="ms-tbl">${b.rows.map(r=>`<tr>${r.map(c=>{const [a,z]=c.split('\n');return `<td${b.hl&&b.hl.includes(a)?' class="hl"':''}><b>${esc(a)}</b><br>${esc(z)}</td>`;}).join('')}</tr>`).join('')}</table>`);break;
   case 'COMPASS':o.push(`<div class="ms-svg">${svgOf(compassPrims(b.d),[0,0,PW,225],'class="ms-compass" role="img" aria-label="方位圖"')}</div>`);break;
-  case 'PAGE1':o.push(`<div class="ms-svg ms-p1">${svgOf(page1(b.d),[0,40,PW,700],'class="ms-page1" role="img" aria-label="命盤"')}</div>`);break;}};
+  case 'PAGE1':o.push(`<div class="ms-svg ms-p1">${svgOf(page1(b.d),[0,40,PW,700],'class="ms-page1" role="img" aria-label="命盤"')}</div>`,page1Html(b.d));break;}};
  blocks.forEach(one);return o.join('');}
+// ── 手機版命盤（≤480px 顯示；內容同第 1 頁 SVG，改為可讀字級的 HTML 版面）
+const WXC={木:'w-mu',火:'w-huo',土:'w-tu',金:'w-jin',水:'w-shui'};
+const GW=g=>'木木火火土土金金水水'['甲乙丙丁戊己庚辛壬癸'.indexOf(g)],ZW=z=>'水土木木土火火土金金土水'['子丑寅卯辰巳午未申酉戌亥'.indexOf(z)];
+export function page1Html(d){const ord=[3,2,1,0],PN=['年','月','日','時'],b=d.birth,L=d.lun;const o=[];
+ const kong=[...new Set(d.kong.flat().join('').split(''))].join('');
+ o.push(`<div class="p1m" aria-label="命盤（手機版）"><div class="p1m-hd"><b>${esc(d.name||'—')}</b>　${esc(d.sex)}<br>西元 ${b.y}年${b.m}月${b.d}日 ${b.h}時${b.mi}分${d.place?'（'+esc(d.place)+'）':''}<br>農曆 民國${L[2]}年${L[3]?'閏':''}${L[0]}月${L[1]}日 ${b.h}時${d.local?'<br>'+esc(d.local):''}</div>`);
+ const row=(lab,f,cls='')=>`<tr${cls?` class="${cls}"`:''}><th>${lab}</th>${ord.map(i=>`<td>${f(d.P[i],i)}</td>`).join('')}</tr>`;
+ o.push(`<table class="p1m-t"><thead><tr><th></th>${ord.map(i=>`<th>${PN[i]}</th>`).join('')}</tr></thead><tbody>`,
+  row('主星',(p,i)=>i===2?'日元':esc(p.ss)),row('天干',p=>`<span class="${WXC[GW(p.gan)]}">${p.gan}</span><small>${GW(p.gan)}</small>`,'gz'),row('地支',p=>`<span class="${WXC[ZW(p.zhi)]}">${p.zhi}</span><small>${ZW(p.zhi)}</small>`,'gz'),
+  row('藏',p=>esc(p.cang)),row('副',p=>p.fu.map(esc).join('<br>')),row('十二運',(p,i)=>`${esc(p.stage)}<br><small>${d.ages[i]}</small>`),row('神煞',(p,i)=>(d.stars[i]||[]).map(esc).join('<br>')||'—','ss'),'</tbody></table>');
+ const R=p1Rels(d);if(R.length)o.push(`<p class="p1m-rel"><b>干支關係</b>　${R.map(r=>`${PN[r.a]}${r.k==='g'?'干':'支'}${r.k==='g'?d.P[r.a].gan:d.P[r.a].zhi}－${PN[r.b]}${r.k==='g'?'干':'支'}${r.k==='g'?d.P[r.b].gan:d.P[r.b].zhi}：${r.r}`).join('；')}</p>`);
+ const info=[['天運五行',d.tianyun],['胎息',d.taixi],['胎元',d.taiyuan],['命宮',d.mg],['格局',d.ge],['血型',d.blood||'—'],['空亡',kong],['喜用神',d.xi.join('')],['忌神',d.ji.join('')],['星座',d.xz],['強弱',d.strong?'身強':'身弱']];
+ o.push(`<dl class="p1m-info">${info.map(([k,v])=>`<div><dt>${k}</dt><dd${k==='喜用神'||k==='忌神'?' class="red"':''}>${esc(v)}</dd></div>`).join('')}</dl>`);
+ const A5='木火土金水',de=A5.indexOf(d.dw),GRP=[['比肩','劫財'],['食神','傷官'],['正財','偏財'],['正官','七殺'],['正印','偏印']];
+ o.push(`<table class="p1m-t p1m-wx"><thead><tr><th>五行</th>${[...A5].map(e=>`<th class="${WXC[e]}">${e}</th>`).join('')}</tr></thead><tbody><tr><th>分數</th>${[...A5].map(e=>`<td>${d.sc[e]}</td>`).join('')}</tr>
+  <tr><th>十神</th>${[...A5].map(e=>{const g=GRP[(A5.indexOf(e)-de+5)%5];return `<td>${g[0]} ${d.cnt[g[0]]}<br>${g[1]} ${d.cnt[g[1]]}</td>`;}).join('')}</tr></tbody></table>`);
+ const dy=d.dayun.slice(0,8);const dyT=part=>`<table class="p1m-t p1m-dy"><tbody><tr><th>歲</th>${part.map(u=>`<td>${u.from}-${u.to}</td>`).join('')}</tr><tr class="gz"><th>大運</th>${part.map(u=>`<td><span class="red">${u.gz}</span></td>`).join('')}</tr><tr><th>十神</th>${part.map(u=>`<td><small>${u.ss}<br>${u.zs}</small></td>`).join('')}</tr></tbody></table>`;
+ o.push('<h4 class="p1m-h">大運</h4>',dyT(dy.slice(0,4)),dyT(dy.slice(4,8)));
+ o.push('<h4 class="p1m-h">流年</h4>');for(let k=0;k<3;k++){const u5=d.ly.slice(k*5,k*5+5);
+  o.push(`<table class="p1m-t p1m-ly"><tbody><tr>${u5.map(u=>`<td>${u.y}<br><small>${u.age}歲</small></td>`).join('')}</tr><tr class="gz">${u5.map(u=>`<td><span class="red">${u.gz}</span><br><small>${u.ss[0]}<br>${u.ss[1]}</small></td>`).join('')}</tr></tbody></table>`);}
+ o.push(`<p class="p1m-ft">本命書由「盲派八字論命」網站依出生資料以規則推算產生，內容僅供參考。</p></div>`);return o.join('');}
 // ── 共用：字型
 async function fonts(pdf,blocks,io){const kai=await pdf.embedFont(await io.font('mangpai/MangpaiKai.ttf'),{subset:true});
  const kset=new Set(kai.getCharacterSet());const man=new Set(await io.manifest().catch(()=>[]));const ext={};

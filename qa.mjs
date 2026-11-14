@@ -55,13 +55,28 @@ if(process.env.SKIP_BROWSER!=='1'){const {chromium}=await import('./qa-pw.mjs');
  const br=await chromium.launch({executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
  for(const [dev,opt] of [['desktop',{viewport:{width:1280,height:900}}],['mobile',{viewport:{width:390,height:844},deviceScaleFactor:3,isMobile:true,hasTouch:true}]]){
   const ctx=await br.newContext({...opt,acceptDownloads:true});const pg=await ctx.newPage();const errs=[];pg.on('pageerror',e=>errs.push(e.message));
-  await pg.goto(BASE,{waitUntil:'networkidle'});await pg.waitForSelector('#p1 svg',{timeout:20000});await pg.waitForTimeout(1200);
+  await pg.goto(BASE,{waitUntil:'networkidle'});await pg.waitForSelector('#p1 svg',{state:'attached',timeout:20000});await pg.waitForTimeout(1200);
+  // 命盤最小字級（CSS px；SVG 文字＝font-size × 縮放比例；只計可見元素）
+  const minFs=await pg.evaluate(()=>{let min=1e9,where='';const vis=e=>{const r=e.getClientRects();return r.length&&r[0].width>0&&getComputedStyle(e).visibility!=='hidden';};
+   for(const t of document.querySelectorAll('#p1 svg text')){if(!vis(t))continue;const sv=t.ownerSVGElement;const sc=sv.getBoundingClientRect().width/sv.viewBox.baseVal.width;const f=parseFloat(t.getAttribute('font-size'))*sc;if(f<min){min=f;where='svg:'+t.textContent;}}
+   const w=document.createTreeWalker(document.querySelector('#p1'),NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode()){const e=n.parentElement;if(!n.textContent.trim()||e.closest('svg')||!vis(e))continue;const f=parseFloat(getComputedStyle(e).fontSize);if(f<min){min=f;where=e.tagName+':'+n.textContent.trim().slice(0,8);}}
+   return {min:Math.round(min*100)/100,where};});
+  console.log(`${dev} 命盤最小字級 ${minFs.min}px（${minFs.where}）`);if(dev==='mobile')ok(minFs.min>=10,`mobile 命盤字級 ${minFs.min}px < 10（${minFs.where}）`);
+  if(dev==='mobile'){await pg.locator('#p1').scrollIntoViewIfNeeded();await pg.screenshot({path:`${OUT}/mobile-fix-chart.png`});await pg.evaluate(()=>scrollBy(0,700));await pg.screenshot({path:`${OUT}/mobile-fix-chart2.png`});}
   await pg.screenshot({path:`${OUT}/${dev}-form.png`});await pg.locator('#p1').scrollIntoViewIfNeeded();await pg.screenshot({path:`${OUT}/${dev}-chart.png`});
   await pg.click('#gen');await pg.waitForFunction(()=>document.querySelectorAll('#bookBody .ms-H').length>40,null,{timeout:30000});await pg.waitForTimeout(1000);
   const info=await pg.evaluate(()=>({t:[...document.querySelectorAll('#bookBody .ms-T')].map(e=>e.textContent),txt:document.querySelector('#bookBody').innerText,ow:document.documentElement.scrollWidth,vw:innerWidth,
    stickyTop:getComputedStyle(document.querySelector('#tabs')).top,nav:!!document.querySelector('script[src*="nav/nav.js"]')}));
   ok(JSON.stringify(info.t)===JSON.stringify(CHAPTERS),`${dev} 網頁命書章節 ${info.t}`);ok(!/undefined|NaN|\$\{/.test(info.txt),`${dev} 網頁未定義`);ok(info.ow<=info.vw+1,`${dev} 橫向捲動 ${info.ow}`);ok(info.nav,'nav.js');
   await pg.screenshot({path:`${OUT}/${dev}-book.png`});
+  // 大運、流年總表：手機第一欄固定、表格在自己的框內橫向捲動
+  const grid=await pg.evaluate(async()=>{const out=[];for(const t of [...document.querySelectorAll('#bookBody .ms-grid')].slice(0,2)){const w=t.closest('.ms-gwrap');const td=t.querySelector('tbody td');
+   const pos=getComputedStyle(td).position;w.scrollLeft=w.scrollWidth;await new Promise(r=>setTimeout(r,100));const dl=Math.abs(td.getBoundingClientRect().left-w.getBoundingClientRect().left);out.push({pos,scrolls:w.scrollWidth>w.clientWidth,dl:Math.round(dl),cap:w.previousElementSibling.textContent});}return out;});
+  if(dev==='mobile'){grid.forEach(g=>ok(g.pos==='sticky'&&g.dl<=2,`mobile ${g.cap} 第一欄未固定 ${JSON.stringify(g)}`));console.log('grid',JSON.stringify(grid));
+   await pg.evaluate(()=>{const w=document.querySelector('#bookBody .ms-gwrap');w.previousElementSibling.scrollIntoView();scrollBy(0,-110);});await pg.waitForTimeout(300);await pg.screenshot({path:`${OUT}/mobile-fix-dayun-table.png`});
+   await pg.evaluate(()=>{const w=document.querySelectorAll('#bookBody .ms-gwrap')[1];w.previousElementSibling.scrollIntoView();scrollBy(0,-110);});await pg.waitForTimeout(300);await pg.screenshot({path:`${OUT}/mobile-fix-liunian-table.png`});
+   const ow=await pg.evaluate(()=>document.documentElement.scrollWidth);ok(ow<=391,'mobile 整頁橫向捲動 '+ow);}
+  else grid.forEach(g=>ok(g.pos!=='sticky','desktop 表格不應固定第一欄'));
   await pg.evaluate(()=>{[...document.querySelectorAll('#bookBody .ms-T')][2].scrollIntoView();scrollBy(0,-120);});await pg.waitForTimeout(400);await pg.screenshot({path:`${OUT}/${dev}-book-mangpai.png`});
   if(dev==='mobile')for(const [b,ext] of [['#dlPdf','pdf'],['#dlDoc','docx']]){const [d]=await Promise.all([pg.waitForEvent('download',{timeout:120000}),pg.click(b)]);const f=`${OUT}/web-demo.${ext}`;await d.saveAs(f);
    const sz=fs.statSync(f).size;ok(sz>(ext==='pdf'?300000:20000),`下載 ${ext} ${sz}`);console.log('download',d.suggestedFilename(),sz);}

@@ -32,3 +32,33 @@ button{cursor:pointer;background:#f3e7c9}button.pri{background:var(--acc);color:
 footer{text-align:center;font-size:12px;color:#8a7a5e;margin:20px 0}
 @media (max-width:600px){header h1{font-size:23px}.card{padding:12px}#tabs button{min-width:0;flex:1}.report{padding:10px;font-size:14px}.report .ms-P,.report .ms-R{margin-left:.6em}.report .ms-Q{margin-left:.8em}}
 @media print{header,#formBox,#tabs,.noprint,footer,#rg-nav-host{display:none!important}.pane{display:none!important}#book{display:block!important}.report{border:0;padding:0}body{background:#fff}}
+/* 手機版命盤（≤480px）：SVG 改為 HTML，所有字 ≥ 10px */
+.p1m{display:none}
+@media (max-width:480px){
+ .ms-p1{display:none}.p1m{display:block;font-size:14px;line-height:1.45;color:#000}
+ .paper{padding:8px}
+ .p1m-hd{margin:0 0 8px;font-size:14px}
+ .p1m-t{width:100%;border-collapse:collapse;table-layout:fixed;margin:6px 0;font-size:13px}
+ .p1m-t th,.p1m-t td{border:1px solid #555;padding:3px 2px;text-align:center;vertical-align:middle;overflow-wrap:anywhere;font-weight:normal}
+ .p1m-t th{background:#f3ecd9;color:#1d3c8f;font-size:12px}
+ .p1m-t thead th{font-size:14px;color:#000}
+ .p1m-t tr.gz td span{font-size:24px;line-height:1.1;display:block}
+ .p1m-t tr.ss td{font-size:12px;vertical-align:top}
+ .p1m-t small{font-size:11px;color:#333}
+ .p1m-t:not(.p1m-wx):not(.p1m-dy):not(.p1m-ly) th:first-child{width:3.4em}
+ .p1m-dy th:first-child,.p1m-wx th:first-child{width:3em}
+ .p1m-dy tr.gz td span,.p1m-ly tr.gz td span{font-size:18px}
+ .p1m-rel{font-size:13px;margin:6px 0}
+ .p1m-info{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:8px 0}
+ .p1m-info div{border:1px solid #c9b98f;border-radius:4px;padding:3px 4px;text-align:center}
+ .p1m-info dt{font-size:12px;color:#1d3c8f}.p1m-info dd{margin:0;font-size:14px}
+ .p1m .red{color:#d00000}
+ .p1m-h{margin:10px 0 2px;color:#1d3c8f;font-size:15px}
+ .p1m-ft{font-size:12px;color:#555;border:1px solid #6a6;border-radius:6px;padding:6px;margin-top:10px}
+ .w-mu{color:#1b7a2e}.w-huo{color:#d00000}.w-tu{color:#8a5a00}.w-jin{color:#a07800}.w-shui{color:#1d3c8f}
+ /* 命書表格：第一欄固定 */
+ .ms-grid{border-collapse:separate;border-spacing:0}
+ .ms-grid th,.ms-grid td{border-width:0 1px 1px 0}.ms-grid tr>:first-child{border-left-width:1px}.ms-grid thead th{border-top-width:1px}
+ .ms-grid th:first-child,.ms-grid td:first-child{position:sticky;left:0;z-index:1;background:#fff;box-shadow:2px 0 0 #444}
+ .ms-grid thead th:first-child{background:#e8eefc;z-index:2}
+}
