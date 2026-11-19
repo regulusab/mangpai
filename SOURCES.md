@@ -63,7 +63,7 @@
   農曆、日柱、時柱換算。
 - **王中和老師「干支換日線」**  
   https://regulusab.github.io/bazi-site/global.html  
-  東經 70° 以西出生者，日柱序加一日。
+  東經 70° 以西出生者，日柱干支進一位（日期不動）。
 - **霞鶩文楷 TC（LXGW WenKai TC，SIL OFL 1.1）**  
   https://github.com/lxgw/LxgwWenkaiTC  
   命書內文字型（子集嵌入 PDF）。

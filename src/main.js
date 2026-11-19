@@ -28,7 +28,7 @@ async function calc(){const f=readForm();const e=check(f);if(e){$('#note').textC
  const g=m.mp.gong.filter(x=>['制用','合用','墓用','化用','生用'].includes(x.type));
  $('#brief').innerHTML=`<h2>盲派結構速覽</h2><p>四柱：<b>${m.P.map(p=>p.gan+p.zhi).join('　')}</b>（${m.male?'乾造':'坤造'}）　日主：${m.dm}　${m.strong?'身強':'身弱'}　喜用：${m.xi.join('')}　忌：${m.ji.join('')}</p>
   <p>做功：${g.length?g.map(x=>`${x.type}（${x.t.name}→${x.u.name}，${x.dir}）`).join('；'):'無明顯做功（平穩型）'}</p><p>層次：${['平穩型','一般','中上','較高'][m.mp.lvl]}　${m.chusheng||''}</p>
-  <p class="muted">排盤口徑：${timeModeLabel(f.timeMode)}。${f.timeMode==='solar'&&f.local.tz!==8?`已將當地時間 ${f.local.date} ${f.local.time}（UTC${f.local.tz>=0?'+':''}${f.local.tz}）換算為台北時間 ${f.date} ${f.time} 再以經度校正真太陽時。`:''}${f.lon!=null&&f.lon<70?'出生地在東經 70° 以西，日柱依干支換日線加一日。':''}</p>`;
+  <p class="muted">排盤口徑：${timeModeLabel(f.timeMode)}。${f.timeMode==='solar'&&f.local.tz!==8?`已將當地時間 ${f.local.date} ${f.local.time}（UTC${f.local.tz>=0?'+':''}${f.local.tz}）換算為台北時間 ${f.date} ${f.time} 再以經度校正真太陽時。`:''}${f.lon!=null&&f.lon<70?'出生地在東經 70° 以西，依干支換日線日柱干支進一位（日期不動）。':''}</p>`;
  $('#note').textContent='';$('#bookMsg').textContent='請按「產生命書」。';$('#bookBody').innerHTML='';['#dlPdf','#dlDoc','#prt'].forEach(s=>$(s).disabled=true);return r;}
 $('#calc').onclick=async()=>{if(await calc())tab('chart');};
 $('#gen').onclick=async()=>{const r=await calc();if(!r)return;const w=await web();w.showBlocks($('#bookBody'),r.blocks);['#dlPdf','#dlDoc','#prt'].forEach(s=>$(s).disabled=false);$('#bookMsg').textContent='命書已產生，可下載 PDF 或 Word。';tab('book');window.scrollTo(0,$('#tabs').offsetTop-50);};

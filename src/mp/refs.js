@@ -19,6 +19,6 @@ export const REFS=[
  {g:'曆法與計算',items:[
   {t:'JPL DE421 星曆（節氣交接時刻）',u:'https://ssd.jpl.nasa.gov/planets/eph_export.html',n:'年柱、月柱以節氣交接時刻為準。'},
   {t:'lunar-javascript（6tail）',u:'https://github.com/6tail/lunar-javascript',n:'農曆、日柱、時柱換算。'},
-  {t:'王中和老師「干支換日線」',u:'https://regulusab.github.io/bazi-site/global.html',n:'東經 70° 以西出生者，日柱序加一日。'},
+  {t:'王中和老師「干支換日線」',u:'https://regulusab.github.io/bazi-site/global.html',n:'東經 70° 以西出生者，日柱干支進一位（日期不動）。'},
   {t:'霞鶩文楷 TC（LXGW WenKai TC，SIL OFL 1.1）',u:'https://github.com/lxgw/LxgwWenkaiTC',n:'命書內文字型（子集嵌入 PDF）。'}]},
 ];
